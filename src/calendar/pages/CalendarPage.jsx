@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Calendar } from 'react-big-calendar'
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
@@ -6,13 +6,13 @@ import { addHours } from 'date-fns'
 import { Navbar, CalendarEvent, CalendarModal, FabAddNew, FabDelete } from '../'
 
 import { localizer, getMessagesES } from '../../helpers';
-import { useUiStore, useCalendarStore } from '../../hooks';
+import { useUiStore, useCalendarStore, useAuthStore } from '../../hooks';
 
 const events = [{
   title: 'Cumpleaños del jefe',
   notes: 'Hay que comprar pastel',
   start: new Date(),
-  end: addHours( new Date(), 2 ),
+  end: addHours(new Date(), 2),
   bgColor: '#fafafa',
   user: {
     _id: '123',
@@ -22,16 +22,20 @@ const events = [{
 
 export const CalendarPage = () => {
 
+  const { user } = useAuthStore();
   const { openDateModal } = useUiStore();
-  const { events, setActiveEvent, hasEventSelected } = useCalendarStore();
+  const { events, setActiveEvent, startLoadingEvents } = useCalendarStore();
 
   const [lastView, setLastView] = useState(localStorage.getItem('lastView') || 'week')
 
 
   //Le da estilos al evento seleccionado
-  const eventStyleGetter = (event, start, end, isSelected) => {    
+  const eventStyleGetter = (event, start, end, isSelected) => {
+
+    const isMyEvent = ( user.uid === event.user) || ( user.uid === event.user.uid);
+
     const style = {
-      backgroundColor: '#327CF7',
+      backgroundColor: isMyEvent ? '#327CF7' : '#465660',
       borderRadius: '0px',
       opacity: 0.8,
       color: 'white'
@@ -43,7 +47,7 @@ export const CalendarPage = () => {
   }
 
   const onDoubleClick = (event) => {
-    console.log({doubleClick: event})
+    console.log({ doubleClick: event })
     openDateModal();
   }
 
@@ -55,6 +59,10 @@ export const CalendarPage = () => {
   const onViewChanged = (event) => {
     localStorage.setItem('lastView', event);
   }
+
+  useEffect(() => {
+    startLoadingEvents();
+  }, [])
 
   return (
     <>
@@ -73,7 +81,7 @@ export const CalendarPage = () => {
         components={{
           event: CalendarEvent
         }}
-        onDoubleClickEvent={ onDoubleClick }
+        onDoubleClickEvent={onDoubleClick}
         onSelectEvent={onSelect}
         onView={onViewChanged}
       />
